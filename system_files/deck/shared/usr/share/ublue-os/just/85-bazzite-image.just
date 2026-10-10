@@ -94,8 +94,10 @@ disable-ryzenadj-max-performance:
 # Re-enable input remapper feature on non-desktop images
 restore-input-remapper:
     systemctl enable --now input-remapper.service && \
+    mkdir -p ~/.local/share/applications ~/.config/autostart && \
     cp /usr/share/applications/input-remapper-gtk.desktop ~/.local/share/applications/input-remapper-gtk.desktop && \
-    sed -i '/NoDisplay=true/d' ~/.local/share/applications/input-remapper-gtk.desktop
+    sed -i '/NoDisplay=true/d' ~/.local/share/applications/input-remapper-gtk.desktop && \
+    if [[ -f /etc/xdg/autostart/input-remapper-autoload.desktop ]]; then cp /etc/xdg/autostart/input-remapper-autoload.desktop ~/.config/autostart/input-remapper-autoload.desktop && sed -i '/Hidden=true/d' ~/.config/autostart/input-remapper-autoload.desktop; fi
 
 # Configure video overrides for Steam
 configure-override-videos ACTION="":
@@ -187,7 +189,14 @@ configure-opengamepadui ACTION="":
     source /usr/lib/ujust/ujust.sh
     OPTION={{ ACTION }}
     OGUI_STEAM="$HOME/.config/gamescope-session-plus/sessions.d/ogui-steam"
-    if [ -f $OGUI_STEAM ]; then
+    get_status_token() {
+      if [ -f "$OGUI_STEAM" ]; then
+        echo "disable"
+      else
+        echo "enable"
+      fi
+    }
+    if [[ "$(get_status_token)" == "disable" ]]; then
         OGUI_STATE="${b}Disabled${n}"
     else
         OGUI_STATE="${b}Enabled${n}"
@@ -195,8 +204,12 @@ configure-opengamepadui ACTION="":
     if [ "$OPTION" == "help" ]; then
       echo "Usage: ujust configure-opengamepadui <option>"
       echo "  <option>: Specify the quick option to skip the prompt"
+      echo "  Use 'status' to print the current status"
       echo "  Use 'enable' to enable OpenGamepadUI overlay"
       echo "  Use 'disable' to disable OpenGamepadUI overlay"
+      exit 0
+    elif [ "$OPTION" == "status" ]; then
+      get_status_token
       exit 0
     elif [ "$OPTION" == "" ]; then
       echo "${bold}Configure OpenGamepadUI overlay${normal}"
